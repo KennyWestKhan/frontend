@@ -1,16 +1,76 @@
-# React + Vite
+# Study Sanctuary - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend module for the **AIT Study Sanctuary**, an interactive and dynamic full-stack application designed to match scholars into optimized study groups. 
 
-Currently, two official plugins are available:
+Built with React and Vite, this client consumes the Study Sanctuary REST API to deliver a seamless, state-driven experience, complete with real-time WebSocket communication for collaborative study rooms.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tech Stack
 
-## React Compiler
+- **Framework:** React 18, Vite
+- **Routing:** React Router DOM
+- **HTTP Client:** Axios
+- **Real-Time:** Socket.IO Client
+- **Styling:** Vanilla CSS / Tailwind CSS (Optional Configuration)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ✨ Core Features
 
-## Expanding the ESLint configuration
+- **JWT Authentication:** Secure user registration, login, and protected routes.
+- **Dynamic Dashboard:** Real-time academic analytics tracking study hours and algorithmic recommendations for live study sessions.
+- **Session Explorer:** Filter, search, join, and create new study sessions dynamically.
+- **Collaboration Rooms:** Instant WebSocket-powered text chat rooms integrated directly into active study sessions.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📦 Prerequisites
+
+Before running the application, ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v16.14.0 or newer)
+- npm or yarn
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository** and navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root of the `frontend` directory:
+   ```env
+   VITE_API_URL=http://localhost:5002/api
+   ```
+   *(Ensure the port matches your backend Node.js server configuration).*
+
+4. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The application will run at `http://localhost:5173`.
+
+## 📜 Available Scripts
+
+In the project directory, you can run:
+
+- `npm run dev` - Runs the app in development mode using Vite.
+- `npm run build` - Builds the app for production to the `dist` folder.
+- `npm run preview` - Locally preview the production build.
+
+## 📁 Project Structure
+
+```text
+frontend/
+├── public/               # Static assets
+├── src/
+│   ├── api/              # Axios configuration & interceptors
+│   ├── components/       # Reusable layout UI components (Sidebar, Topbar)
+│   ├── context/          # React Context providers (AuthContext)
+│   ├── pages/            # Core route views (Dashboard, Login, Profile, etc.)
+│   ├── index.css         # Global stylesheets
+│   └── App.jsx           # Main Application routing entrypoint
+├── index.html            # HTML template
+├── vite.config.js        # Vite build configuration
+└── package.json          # Project dependencies & scripts
+```
