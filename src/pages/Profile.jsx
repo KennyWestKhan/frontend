@@ -5,6 +5,7 @@ import api from '../api/axios';
 export default function Profile() {
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({ totalHours: 0, sessionsJoined: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchProfileStats = async () => {
@@ -15,6 +16,8 @@ export default function Profile() {
         setStats({ totalHours: logRes.data.totalHours || 0, sessionsJoined: joinedCount });
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     if (user) fetchProfileStats();
@@ -67,32 +70,52 @@ export default function Profile() {
 
       {/* Stats Bento Grid */}
       <section className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="md:col-span-2 bg-surface-container-lowest p-8 rounded-3xl flex flex-col justify-between shadow-sm border border-outline-variant/10">
-          <div className="flex justify-between items-start">
-            <span className="material-symbols-outlined text-3xl text-secondary">query_stats</span>
-            <span className="text-xs font-bold text-outline uppercase tracking-tighter">Academic Velocity</span>
-          </div>
-          <div className="mt-8">
-            <h4 className="text-6xl font-headline font-extrabold text-primary tracking-tighter">{stats.totalHours.toFixed(1)}</h4>
-            <p className="text-lg text-on-surface-variant font-medium">Total Study Hours</p>
-          </div>
-        </div>
-        
-        <div className="bg-primary-container p-8 rounded-3xl flex flex-col justify-between shadow-xl">
-          <span className="material-symbols-outlined text-3xl text-secondary-container">groups</span>
-          <div className="mt-8">
-            <h4 className="text-5xl font-headline font-bold text-white tracking-tighter">{stats.sessionsJoined}</h4>
-            <p className="text-sm text-on-primary-container font-medium">Sessions Joined</p>
-          </div>
-        </div>
-        
-        <div className="bg-secondary-container p-8 rounded-3xl flex flex-col justify-between shadow-lg">
-          <span className="material-symbols-outlined text-3xl text-primary">workspace_premium</span>
-          <div className="mt-8">
-            <h4 className="text-5xl font-headline font-bold text-primary tracking-tighter">0</h4>
-            <p className="text-sm text-on-secondary-fixed-variant font-medium">Impact Badges</p>
-          </div>
-        </div>
+        {loading ? (
+          <>
+            <div className="md:col-span-2 bg-surface-container-lowest p-8 rounded-3xl animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-8"/>
+              <div className="h-14 bg-slate-200 rounded w-1/2 mb-2"/>
+              <div className="h-4 bg-slate-100 rounded w-2/3"/>
+            </div>
+            <div className="bg-primary-container/30 p-8 rounded-3xl animate-pulse">
+              <div className="h-4 bg-slate-300 rounded w-1/3 mb-8"/>
+              <div className="h-12 bg-slate-300 rounded w-1/2"/>
+            </div>
+            <div className="bg-secondary-container/30 p-8 rounded-3xl animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-8"/>
+              <div className="h-12 bg-slate-200 rounded w-1/2"/>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="md:col-span-2 bg-surface-container-lowest p-8 rounded-3xl flex flex-col justify-between shadow-sm border border-outline-variant/10">
+              <div className="flex justify-between items-start">
+                <span className="material-symbols-outlined text-3xl text-secondary">query_stats</span>
+                <span className="text-xs font-bold text-outline uppercase tracking-tighter">Academic Velocity</span>
+              </div>
+              <div className="mt-8">
+                <h4 className="text-6xl font-headline font-extrabold text-primary tracking-tighter">{stats.totalHours.toFixed(1)}</h4>
+                <p className="text-lg text-on-surface-variant font-medium">Total Study Hours</p>
+              </div>
+            </div>
+            
+            <div className="bg-primary-container p-8 rounded-3xl flex flex-col justify-between shadow-xl">
+              <span className="material-symbols-outlined text-3xl text-secondary-container">groups</span>
+              <div className="mt-8">
+                <h4 className="text-5xl font-headline font-bold text-white tracking-tighter">{stats.sessionsJoined}</h4>
+                <p className="text-sm text-on-primary-container font-medium">Sessions Joined</p>
+              </div>
+            </div>
+            
+            <div className="bg-secondary-container p-8 rounded-3xl flex flex-col justify-between shadow-lg">
+              <span className="material-symbols-outlined text-3xl text-primary">workspace_premium</span>
+              <div className="mt-8">
+                <h4 className="text-5xl font-headline font-bold text-primary tracking-tighter">0</h4>
+                <p className="text-sm text-on-secondary-fixed-variant font-medium">Impact Badges</p>
+              </div>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

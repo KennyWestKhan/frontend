@@ -7,6 +7,7 @@ export default function Dashboard() {
   const { user } = useContext(AuthContext);
   const [recentSessions, setRecentSessions] = useState([]);
   const [stats, setStats] = useState({ totalHours: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Fetch user's upcoming or recent sessions
@@ -19,6 +20,8 @@ export default function Dashboard() {
         setStats({ totalHours: logsRes.data.totalHours || 0 });
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchDashboardData();
@@ -111,7 +114,18 @@ export default function Dashboard() {
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recentSessions.length > 0 ? (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse">
+                <div className="h-32 bg-slate-200"/>
+                <div className="p-5 space-y-3">
+                  <div className="h-4 bg-slate-200 rounded w-3/4"/>
+                  <div className="h-3 bg-slate-100 rounded w-1/2"/>
+                  <div className="h-3 bg-slate-100 rounded w-1/3"/>
+                </div>
+              </div>
+            ))
+          ) : recentSessions.length > 0 ? (
             recentSessions.map((session) => (
               <div key={session.id} className="group relative bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500">
                 <div className="h-32 bg-slate-200 relative">

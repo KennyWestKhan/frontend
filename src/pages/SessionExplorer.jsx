@@ -8,6 +8,9 @@ export default function SessionExplorer() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [newSession, setNewSession] = useState({ course: '', time: '', location: '', max_members: 5 });
+  const [loadingSessions, setLoadingSessions] = useState(true);
+  const [joiningId, setJoiningId] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     // Fetch sessions from backend
@@ -17,6 +20,8 @@ export default function SessionExplorer() {
         setSessions(res.data);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoadingSessions(false);
       }
     };
     fetchSessions();
@@ -24,17 +29,20 @@ export default function SessionExplorer() {
 
   const handleJoin = async (e, sessionId) => {
     e.preventDefault();
+    setJoiningId(sessionId);
     try {
       await api.post(`/sessions/${sessionId}/join`);
       alert('Successfully joined the session! Click to enter the room.');
-      // Update local state to show Full if needed, but for simplicity just alert success
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to join session');
+    } finally {
+      setJoiningId(null);
     }
   };
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    setCreating(true);
     try {
       const res = await api.post('/sessions', newSession);
       setSessions((prev) => [...prev, res.data]);
@@ -43,6 +51,8 @@ export default function SessionExplorer() {
       alert('Session created successfully!');
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to create session');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -99,8 +109,20 @@ export default function SessionExplorer() {
 
       {/* Bento Grid of Sessions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {sessions.length > 0 ? (
-          sessions.map((session) => (
+        {loadingSessions ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-[2rem] p-8 border border-outline-variant/20 bg-white animate-pulse">
+              <div className="h-4 bg-slate-200 rounded w-1/3 mb-6"/>
+              <div className="h-6 bg-slate-200 rounded w-2/3 mb-3"/>
+              <div className="h-3 bg-slate-100 rounded w-full mb-2"/>
+              <div className="h-3 bg-slate-100 rounded w-5/6 mb-8"/>
+              <div className="h-10 bg-slate-200 rounded-xl"/>
+            </div>
+          ))
+        ) : sessions.filter(s => s.course?.toLowerCase().includes(search.toLowerCase())).length > 0 ? (
+          sessions
+            .filter(s => s.course?.toLowerCase().includes(search.toLowerCase()))
+            .map((session) => (
             <div key={session.id} className="glass-card flex flex-col rounded-[2rem] p-8 border border-white/40 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all hover:-translate-y-1 overflow-hidden relative group">
               <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary-container/10 rounded-full blur-2xl group-hover:bg-secondary-container/20 transition-all"></div>
               
@@ -130,8 +152,20 @@ export default function SessionExplorer() {
                 </div>
               </div>
               
-              <button onClick={(e) => handleJoin(e, session.id)} className="mb-2 w-full py-2 bg-secondary text-primary font-bold rounded-xl hover:bg-[#fecb00] transition-all shadow-md active:scale-[0.98]">
-                Join Session
+              <button
+                onClick={(e) => handleJoin(e, session.id)}
+                disabled={joiningId === session.id}
+                className="mb-2 w-full py-2 bg-secondary text-primary font-bold rounded-xl hover:bg-[#fecb00] transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {joiningId === session.id ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Joining...
+                  </>
+                ) : 'Join Session'}
               </button>
               <Link to={`/room/${session.id}`} className="w-full py-4 bg-primary-container text-white font-bold rounded-2xl hover:bg-primary transition-all shadow-md active:scale-[0.98] text-center block">
                 Enter Room
@@ -194,8 +228,20 @@ export default function SessionExplorer() {
               <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">
                 Cancel
               </button>
-              <button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-container transition-colors shadow-md">
-                Create
+              <button
+                type="submit"
+                disabled={creating}
+                className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary-container transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {creating ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Creating...
+                  </>
+                ) : 'Create'}
               </button>
             </div>
           </form>

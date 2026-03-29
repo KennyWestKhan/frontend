@@ -5,16 +5,19 @@ import api from '../api/axios';
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ type: '', message: '' });
-    
+    setLoading(true);
     try {
       const res = await api.post('/auth/forgot-password', { email });
       setStatus({ type: 'success', message: res.data.message || 'If an account exists, a reset link has been sent to your email.' });
     } catch (err) {
       setStatus({ type: 'error', message: err.response?.data?.message || 'Failed to process request. Please try again later.' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -54,8 +57,20 @@ export default function ForgotPassword() {
             />
           </div>
           
-          <button type="submit" className="w-full h-14 bg-primary text-white font-headline font-bold rounded-xl shadow-lg hover:bg-primary-container hover:shadow-xl active:scale-[0.98] transition-all">
-            Send Reset Link
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-14 bg-primary text-white font-headline font-bold rounded-xl shadow-lg hover:bg-primary-container hover:shadow-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Sending...
+              </>
+            ) : 'Send Reset Link'}
           </button>
         </form>
 
