@@ -30,10 +30,10 @@ export default function Topbar() {
           
           <Link to="/profile" className="flex items-center gap-3">
             <div className="hidden md:block text-right">
-              <p className="text-sm font-bold text-primary">{user?.username || 'Scholar'}</p>
+              <p className="text-sm font-bold text-primary">{user?.name || 'Scholar'}</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold ring-2 ring-primary-container/10">
-              {user?.username?.charAt(0).toUpperCase() || 'S'}
+              {user?.name?.charAt(0).toUpperCase() || 'S'}
             </div>
           </Link>
         </div>

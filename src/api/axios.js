@@ -1,21 +1,30 @@
 import axios from 'axios';
 
-// The backend is running on local port 5000 (from server.js)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const api = axios.create({
   baseURL: API_URL,
 });
 
-// Intercept requests to attach the token if logged in
+// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+}, (error) => Promise.reject(error));
+
+// Auto-logout on 401 (expired / invalid token)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
