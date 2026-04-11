@@ -11,6 +11,9 @@ export default function CollaborationRoom() {
   const [messages, setMessages] = useState([]);
   const [session, setSession] = useState(null);
   const [activeScholars, setActiveScholars] = useState([]);
+  const [activeTab, setActiveTab] = useState('room'); // 'room' or 'files'
+  const [files, setFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [inputMsg, setInputMsg] = useState('');
   const [socket, setSocket] = useState(null);
   const chatBottomRef = useRef(null);
@@ -22,6 +25,7 @@ export default function CollaborationRoom() {
     const fetchSessionStatus = async () => {
       try {
         const res = await api.get(`/sessions/${id}`);
+        console.log('Session Data loaded:', res.data);
         setSession(res.data);
       } catch (err) {
         console.error('Failed to load session details:', err);
@@ -47,7 +51,18 @@ export default function CollaborationRoom() {
     };
     fetchHistory();
 
-    // 2. Connect to Socket.IO backend
+    // 2. Fetch Session Files
+    const fetchFiles = async () => {
+      try {
+        const res = await api.get(`/sessions/${id}/files`);
+        setFiles(res.data);
+      } catch (err) {
+        console.error('Failed to load files:', err);
+      }
+    };
+    fetchFiles();
+
+    // 3. Connect to Socket.IO backend
     const s = io(import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5001');
     setSocket(s);
 
@@ -88,6 +103,27 @@ export default function CollaborationRoom() {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await api.post(`/sessions/${id}/files`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFiles((prev) => [res.data, ...prev]);
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Failed to upload file.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleLeaveSession = async () => {
     try {
       await api.post(`/sessions/${id}/leave`);
@@ -106,8 +142,18 @@ export default function CollaborationRoom() {
         <div className="flex items-center gap-6">
           <Link to="/dashboard" className="text-2xl font-extrabold text-primary tracking-tighter">AIT Study Sanctuary</Link>
           <nav className="hidden lg:flex items-center gap-6 ml-8">
-            <span className="text-primary border-b-2 border-secondary-container pb-1 font-semibold text-sm">Session Room</span>
-            <span className="text-slate-500 hover:text-primary transition-colors text-sm font-semibold cursor-pointer">Shared Files</span>
+            <span 
+              onClick={() => setActiveTab('room')}
+              className={`pb-1 font-semibold text-sm cursor-pointer transition-all ${activeTab === 'room' ? 'text-primary border-b-2 border-secondary-container' : 'text-slate-500 hover:text-primary'}`}
+            >
+              Session Room
+            </span>
+            <span 
+              onClick={() => setActiveTab('files')}
+              className={`pb-1 font-semibold text-sm cursor-pointer transition-all ${activeTab === 'files' ? 'text-primary border-b-2 border-secondary-container' : 'text-slate-500 hover:text-primary'}`}
+            >
+              Shared Files
+            </span>
           </nav>
         </div>
         <div className="flex items-center gap-4">
@@ -121,82 +167,143 @@ export default function CollaborationRoom() {
       {/* Dynamic Collaboration Workspace */}
       <div className="flex-grow overflow-hidden flex flex-col lg:flex-row p-6 gap-6">
         
-        {/* Left Column: Live Collaboration & Chat */}
+        {/* Left Column: Live Collaboration & Chat or File Explorer */}
         <div className="flex-[3] flex flex-col gap-6">
-          <section className="bg-primary p-8 rounded-[2rem] relative overflow-hidden shadow-2xl shadow-primary/20">
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="bg-secondary-container text-primary text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Live Now</span>
-                <span className="text-white/60 text-xs font-label">Session ID: {id}</span>
-              </div>
-              <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">
-                {session?.course ? 'Live Study Room :  ' + session.course : 'Loading Session...'}
-              </h2>
-              <div className="mt-8 flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center">
-                    <span className="material-symbols-outlined text-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
+          {activeTab === 'room' ? (
+            <>
+              <section className="bg-primary p-8 rounded-[2rem] relative overflow-hidden shadow-2xl shadow-primary/20">
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="bg-secondary-container text-primary text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">Live Now</span>
+                    <span className="text-white/60 text-xs font-label">Session ID: {id}</span>
                   </div>
-                  <div>
-                    <p className="text-[10px] text-blue-200 font-label uppercase">Scholars</p>
-                    <p className="text-white font-bold">Active</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Chat Interface */}
-          <section className="flex-grow flex flex-col bg-surface-container-lowest rounded-[2rem] shadow-sm overflow-hidden border border-outline-variant/10">
-            <div className="px-6 py-4 flex items-center justify-between bg-surface-container-low/50">
-              <h3 className="font-bold text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary-container">forum</span>
-                Study Discourse
-              </h3>
-            </div>
-            
-            <div className="flex-grow overflow-y-auto p-6 space-y-6">
-              {messages.map((msg, i) => {
-                const isMe = msg.userName === user?.name || msg.user_id === user?.id;
-                return (
-                  <div key={i} className={`flex gap-4 items-start max-w-[85%] ${isMe ? 'justify-end ml-auto' : ''}`}>
-                    {!isMe && (
-                      <div className="w-10 h-10 rounded-full bg-secondary-container text-primary flex justify-center items-center font-bold mt-1">
-                        {msg.userName?.charAt(0) || 'U'}
+                  <h2 className="text-4xl font-extrabold text-white tracking-tight mb-2">
+                    {session?.course ? 'Live Study Room :  ' + session.course : 'Loading Session...'}
+                  </h2>
+                  <p className="text-white/80 text-lg font-medium max-w-2xl leading-relaxed">
+                    {session?.description || 'Connect and collaborate with peers in this live study session.'}
+                  </p>
+                  <div className="mt-8 flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center">
+                        <span className="material-symbols-outlined text-secondary-container" style={{ fontVariationSettings: "'FILL' 1" }}>groups</span>
                       </div>
-                    )}
-                    <div className={isMe ? 'text-right' : ''}>
-                      <p className={`text-xs font-bold text-primary mb-1 ${isMe ? 'mr-1' : 'ml-1'}`}>
-                        {isMe ? 'You' : msg.userName}
-                      </p>
-                      <div className={`${isMe ? 'bg-primary text-white rounded-tr-none shadow-primary/10' : 'bg-surface-container rounded-tl-none'} rounded-2xl p-4 text-sm leading-relaxed shadow-lg`}>
-                        {msg.content}
+                      <div>
+                        <p className="text-[10px] text-blue-200 font-label uppercase">Scholars</p>
+                        <p className="text-white font-bold">Active</p>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-              <div ref={chatBottomRef}></div>
-            </div>
-            
-            <div className="p-4 bg-surface-container-low">
-              <div className="relative">
-                <input 
-                  type="text"
-                  value={inputMsg}
-                  onChange={(e) => setInputMsg(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                  className="w-full bg-surface-container-highest border-none rounded-2xl py-4 pl-6 pr-16 focus:ring-2 focus:ring-secondary transition-all text-sm font-medium" 
-                  placeholder="Type your contribution..."
-                />
-                <button 
-                  onClick={sendMessage}
-                  className="absolute right-2 top-2 bg-primary-container text-white p-2 px-4 rounded-xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
-                  <span className="material-symbols-outlined">send</span>
-                </button>
+                </div>
+              </section>
+
+              {/* Chat Interface */}
+              <section className="flex-grow flex flex-col bg-surface-container-lowest rounded-[2rem] shadow-sm overflow-hidden border border-outline-variant/10">
+                <div className="px-6 py-4 flex items-center justify-between bg-surface-container-low/50">
+                  <h3 className="font-bold text-primary flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary-container">forum</span>
+                    Study Discourse
+                  </h3>
+                </div>
+                
+                <div className="flex-grow overflow-y-auto p-6 space-y-6">
+                  {messages.map((msg, i) => {
+                    const isMe = msg.userName === user?.name || msg.user_id === user?.id;
+                    return (
+                      <div key={i} className={`flex gap-4 items-start max-w-[85%] ${isMe ? 'justify-end ml-auto' : ''}`}>
+                        {!isMe && (
+                          <div className="w-10 h-10 rounded-full bg-secondary-container text-primary flex justify-center items-center font-bold mt-1">
+                            {msg.userName?.charAt(0) || 'U'}
+                          </div>
+                        )}
+                        <div className={isMe ? 'text-right' : ''}>
+                          <p className={`text-xs font-bold text-primary mb-1 ${isMe ? 'mr-1' : 'ml-1'}`}>
+                            {isMe ? 'You' : msg.userName}
+                          </p>
+                          <div className={`${isMe ? 'bg-primary text-white rounded-tr-none shadow-primary/10' : 'bg-surface-container rounded-tl-none'} rounded-2xl p-4 text-sm leading-relaxed shadow-lg`}>
+                            {msg.content}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={chatBottomRef}></div>
+                </div>
+                
+                <div className="p-4 bg-surface-container-low">
+                  <div className="relative">
+                    <input 
+                      type="text"
+                      value={inputMsg}
+                      onChange={(e) => setInputMsg(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                      className="w-full bg-surface-container-highest border-none rounded-2xl py-4 pl-6 pr-16 focus:ring-2 focus:ring-secondary transition-all text-sm font-medium" 
+                      placeholder="Type your contribution..."
+                    />
+                    <button 
+                      onClick={sendMessage}
+                      className="absolute right-2 top-2 bg-primary-container text-white p-2 px-4 rounded-xl flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+                      <span className="material-symbols-outlined">send</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className="flex-grow flex flex-col bg-surface-container-lowest rounded-[2rem] shadow-sm overflow-hidden border border-outline-variant/10">
+              <div className="px-10 py-8 bg-ait-gradient text-white flex justify-between items-center">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight">Resource Vault</h2>
+                  <p className="text-blue-100 text-sm opacity-80 mt-1 font-medium">Shared knowledge and session materials.</p>
+                </div>
+                <label className="cursor-pointer group">
+                  <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                  <div className="flex items-center gap-3 bg-white/20 backdrop-blur-md px-6 py-3 rounded-xl border border-white/30 hover:bg-white/30 transition-all font-bold text-sm">
+                    {uploading ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">upload_file</span>
+                    )}
+                    {uploading ? 'Uploading...' : 'Upload Resource'}
+                  </div>
+                </label>
               </div>
-            </div>
-          </section>
+
+              <div className="flex-grow overflow-y-auto p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {files.length === 0 && (
+                    <div className="col-span-full h-64 flex flex-col items-center justify-center text-slate-300 gap-4 opacity-50">
+                      <span className="material-symbols-outlined text-6xl">folder_off</span>
+                      <p className="text-sm font-medium">The vault is empty. Upload the first resource!</p>
+                    </div>
+                  )}
+                  {files.map((file) => (
+                    <div key={file.id} className="group bg-surface-container-low p-5 rounded-2xl flex items-center justify-between border border-transparent hover:border-primary/20 hover:bg-white transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                          <span className="material-symbols-outlined">description</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-primary truncate max-w-[150px]">{file.filename}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                            {(file.size / 1024).toFixed(1)} KB • {file.User?.name || 'Scholar'}
+                          </p>
+                        </div>
+                      </div>
+                      <a 
+                        href={file.storage_type === 'Local' ? `${import.meta.env.VITE_API_URL?.replace('/api', '')}${file.url}` : file.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary-container/10 transition-all"
+                      >
+                        <span className="material-symbols-outlined">download</span>
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         {/* Right Column: Scholars & Resources */}

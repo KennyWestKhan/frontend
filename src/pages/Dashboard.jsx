@@ -10,6 +10,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showLogModal, setShowLogModal] = useState(false);
   const [newLog, setNewLog] = useState({ topic: '', hours_studied: 1 });
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
+  const [savingSession, setSavingSession] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -42,6 +45,22 @@ export default function Dashboard() {
       fetchDashboardData();
     } catch (err) {
       console.error('Failed to log hours:', err);
+    }
+  };
+
+  const handleUpdateSession = async (e, manualStatus = null) => {
+    if (e.preventDefault) e.preventDefault();
+    setSavingSession(true);
+    try {
+      const payload = manualStatus ? { ...editingSession, status: manualStatus } : editingSession;
+      await api.put(`/sessions/${editingSession.id}`, payload);
+      setShowEditModal(false);
+      setEditingSession(null);
+      fetchDashboardData();
+    } catch (err) {
+      console.error('Failed to update session:', err);
+    } finally {
+      setSavingSession(false);
     }
   };
 
@@ -220,6 +239,90 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Edit Session Modal */}
+      {showEditModal && editingSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)}></div>
+          <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-3xl font-extrabold text-primary tracking-tight">Edit Session</h3>
+                <p className="text-slate-500 font-medium">Update your study group details</p>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateSession} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Course / Topic</label>
+                <input 
+                  required
+                  type="text" 
+                  value={editingSession.course}
+                  onChange={e => setEditingSession({...editingSession, course: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Description</label>
+                <textarea 
+                  value={editingSession.description}
+                  onChange={e => setEditingSession({...editingSession, description: e.target.value})}
+                  className="w-full px-6 py-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium min-h-[120px] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Location</label>
+                <input 
+                  required
+                  type="text" 
+                  value={editingSession.location}
+                  onChange={e => setEditingSession({...editingSession, location: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Target Skill Level</label>
+                <select 
+                  value={editingSession.skill_level}
+                  onChange={e => setEditingSession({...editingSession, skill_level: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                >
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to close this session? It will no longer be joinable.')) {
+                      await handleUpdateSession({ preventDefault: () => {}, target: { status: 'Closed' } }, 'Closed');
+                    }
+                  }}
+                  className="flex-1 h-14 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all border border-slate-200"
+                >
+                  Close Session
+                </button>
+                <button 
+                  type="submit"
+                  disabled={savingSession}
+                  className="flex-[2] h-14 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {savingSession ? 'Updating...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
       {/* Discover Sessions (Preview) */}
       <div className="mt-4">
@@ -249,10 +352,26 @@ export default function Dashboard() {
                 <div className={`h-32 bg-gradient-to-br ${getCourseGradient(session.course)} relative`}>
                   <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <span className="absolute bottom-3 left-4 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/30">{session.location}</span>
+                  {session.creator_id === user?.id && (
+                    <button 
+                      onClick={() => {
+                        setEditingSession(session);
+                        setShowEditModal(true);
+                      }}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/40 transition-all"
+                    >
+                      <span className="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                  )}
                 </div>
                 <div className="p-5">
                   <h5 className="text-lg font-bold text-primary mb-1 line-clamp-1">{session.course}</h5>
-                  <p className="text-slate-500 text-[10px] mb-4 uppercase tracking-widest font-bold">Match Score: <span className="text-secondary">{session.match_score} pts</span></p>
+                  <p className="text-slate-500 text-[11px] mb-3 line-clamp-2">{session.description || 'Connect and collaborate with peers in this live study session.'}</p>
+                  <div className="flex items-center gap-2 mb-4">
+                    <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Match: <span className="text-secondary">{session.match_score} pts</span></p>
+                    <span className="text-slate-300">•</span>
+                    <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">Host: <span className="text-primary">{session.creator_id === user?.id ? 'Me' : (session.creator?.name || 'AIT Scholar')}</span></p>
+                  </div>
                   <div className="flex items-center justify-between mt-auto">
                     <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase">
                       <span className="material-symbols-outlined text-xs">schedule</span> {new Date(session.time).toLocaleDateString()}

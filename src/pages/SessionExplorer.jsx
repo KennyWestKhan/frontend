@@ -1,31 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
+import { AuthContext } from '../context/AuthContextObj';
 
 export default function SessionExplorer() {
+  const { user } = useContext(AuthContext);
   const [sessions, setSessions] = useState([]);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [newSession, setNewSession] = useState({ course: '', time: '', location: '', max_members: 5 });
+  const [newSession, setNewSession] = useState({ course: '', description: '', time: '', location: '', max_members: '', skill_level: 'Beginner' });
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [joiningId, setJoiningId] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
+  const [savingSession, setSavingSession] = useState(false);
+
+  const fetchSessions = async () => {
+    try {
+      const res = await api.get('/sessions');
+      setSessions(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
 
   useEffect(() => {
-    // Fetch sessions from backend
-    const fetchSessions = async () => {
-      try {
-        const res = await api.get('/sessions');
-        setSessions(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingSessions(false);
-      }
-    };
     fetchSessions();
   }, []);
+
+  const handleUpdateSession = async (e, manualStatus = null) => {
+    if (e.preventDefault) e.preventDefault();
+    setSavingSession(true);
+    try {
+      const payload = manualStatus ? { ...editingSession, status: manualStatus } : editingSession;
+      await api.put(`/sessions/${editingSession.id}`, payload);
+      setShowEditModal(false);
+      setEditingSession(null);
+      fetchSessions();
+    } catch (err) {
+      console.error('Failed to update session:', err);
+      alert('Failed to update session.');
+    } finally {
+      setSavingSession(false);
+    }
+  };
 
   const handleJoin = async (e, sessionId) => {
     e.preventDefault();
@@ -166,17 +188,24 @@ export default function SessionExplorer() {
                 <span className="px-3 py-1 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold rounded-full uppercase border border-white/30">
                   {session.status || 'Active'}
                 </span>
+                {session.creator_id === user?.id && (
+                  <button 
+                    onClick={() => {
+                      setEditingSession(session);
+                      setShowEditModal(true);
+                    }}
+                    className="absolute top-4 right-4 w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/40 transition-all border border-white/30"
+                  >
+                    <span className="material-symbols-outlined text-sm">edit</span>
+                  </button>
+                )}
               </div>
               
               <div className="p-8 pt-6">
-                <h3 className="text-2xl font-bold text-primary font-headline mb-2 leading-tight">
-                  {session.course}
-                </h3>
-                <p className="text-slate-500 text-sm font-medium mb-6">
-                  Connect and collaborate with peers in this live study session.
-                </p>
+                <h4 className="text-xl font-bold text-primary mb-2">{session.course}</h4>
+                <p className="text-slate-500 text-sm mb-6 line-clamp-2">{session.description || 'Connect and collaborate with peers in this live study session.'}</p>
                 
-                <div className="space-y-4 mb-8">
+                <div className="grid grid-cols-2 gap-4 mb-8">
                   <div className="flex items-center gap-3 text-slate-600">
                     <span className="material-symbols-outlined text-secondary">calendar_today</span>
                     <span className="text-sm font-medium">
@@ -186,6 +215,14 @@ export default function SessionExplorer() {
                   <div className="flex items-center gap-3 text-slate-600">
                     <span className="material-symbols-outlined text-secondary">location_on</span>
                     <span className="text-sm font-medium">{session.location}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <span className="material-symbols-outlined text-secondary">person</span>
+                    <span className="text-sm font-bold text-primary">Host: {session.creator_id === user?.id ? 'Me' : (session.creator?.name || 'AIT Scholar')}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <span className="material-symbols-outlined text-secondary">trending_up</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-md">{session.skill_level || 'Beginner'}</span>
                   </div>
                 </div>
                 
@@ -240,6 +277,12 @@ export default function SessionExplorer() {
               onChange={e => setNewSession({...newSession, course: e.target.value})} 
               className="mb-3 w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30"
             />
+            <textarea 
+              placeholder="Session Description (What will you cover?)" 
+              value={newSession.description} 
+              onChange={e => setNewSession({...newSession, description: e.target.value})} 
+              className="mb-3 w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30 min-h-[100px] resize-none text-sm"
+            />
             <input 
               required 
               type="datetime-local" 
@@ -255,13 +298,25 @@ export default function SessionExplorer() {
               onChange={e => setNewSession({...newSession, location: e.target.value})} 
               className="mb-3 w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30"
             />
+            <div className="mb-4">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Target Excellence Level</label>
+              <select 
+                value={newSession.skill_level}
+                onChange={e => setNewSession({...newSession, skill_level: e.target.value})}
+                className="w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30 text-sm font-medium cursor-pointer"
+              >
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
             <input 
               type="number" 
               min="2" 
               placeholder="Max Members (default: 5)" 
               value={newSession.max_members} 
               onChange={e => setNewSession({...newSession, max_members: e.target.value})} 
-              className="mb-6 w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30"
+              className="mb-8 w-full p-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary/30"
             />
             
             <div className="flex gap-3 mt-auto">
@@ -287,6 +342,90 @@ export default function SessionExplorer() {
           </form>
         )}
       </div>
+
+      {/* Edit Session Modal */}
+      {showEditModal && editingSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowEditModal(false)}></div>
+          <div className="relative bg-white rounded-[2.5rem] w-full max-w-lg p-10 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-3xl font-extrabold text-primary tracking-tight">Edit Session</h3>
+                <p className="text-slate-500 font-medium">Update your study group details</p>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="w-10 h-10 rounded-full hover:bg-slate-100 flex items-center justify-center transition-colors"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateSession} className="space-y-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Course / Topic</label>
+                <input 
+                  required
+                  type="text" 
+                  value={editingSession.course}
+                  onChange={e => setEditingSession({...editingSession, course: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Description</label>
+                <textarea 
+                  value={editingSession.description}
+                  onChange={e => setEditingSession({...editingSession, description: e.target.value})}
+                  className="w-full px-6 py-4 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium min-h-[120px] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Location</label>
+                <input 
+                  required
+                  type="text" 
+                  value={editingSession.location}
+                  onChange={e => setEditingSession({...editingSession, location: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Target Excellence Level</label>
+                <select 
+                  value={editingSession.skill_level}
+                  onChange={e => setEditingSession({...editingSession, skill_level: e.target.value})}
+                  className="w-full h-14 px-6 rounded-2xl bg-surface-container-low border-none focus:ring-2 focus:ring-secondary transition-all font-medium"
+                >
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to close this session? It will no longer be joinable.')) {
+                      await handleUpdateSession({ preventDefault: () => {} }, 'Closed');
+                    }
+                  }}
+                  className="flex-1 h-14 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all border border-slate-200"
+                >
+                  Close Session
+                </button>
+                <button 
+                  type="submit"
+                  disabled={savingSession}
+                  className="flex-[2] h-14 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {savingSession ? 'Updating...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

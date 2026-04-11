@@ -128,20 +128,34 @@ export default function Profile() {
                   type="text" 
                   value={formData.course}
                   onChange={e => setFormData({...formData, course: e.target.value})}
+                  list="course-list"
                   className="w-full h-14 px-5 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary transition-all font-medium" 
                 />
+                <datalist id="course-list">
+                  <option value="BSc. Computer Science" />
+                  <option value="BSc. Computer Engineering" />
+                  <option value="BSc. Electrical/Electronic Engineering" />
+                  <option value="BSc. Telecommunications Engineering" />
+                  <option value="BSc. Mechanical Engineering" />
+                  <option value="BSc. Civil Engineering" />
+                  <option value="BSc. Business Information Technology" />
+                  <option value="BSc. Management Information Systems" />
+                  <option value="MBA Information Technology" />
+                  <option value="MSc. Computer Science" />
+                  <option value="MSc. Embedded Systems" />
+                  <option value="MSc. Data Science & AI" />
+                </datalist>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Skill Level</label>
                 <select 
                   value={formData.skill_level}
                   onChange={e => setFormData({...formData, skill_level: e.target.value})}
-                  className="w-full h-14 px-5 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary transition-all font-medium" 
+                  className="w-full h-14 px-5 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary transition-all font-medium cursor-pointer" 
                 >
-                  <option>Beginner</option>
-                  <option>Intermediate</option>
-                  <option>Advanced</option>
-                  <option>Expert</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
                 </select>
               </div>
               <div>
@@ -150,8 +164,19 @@ export default function Profile() {
                   type="text" 
                   value={formData.location}
                   onChange={e => setFormData({...formData, location: e.target.value})}
+                  list="location-list"
                   className="w-full h-14 px-5 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary transition-all font-medium" 
                 />
+                <datalist id="location-list">
+                  <option value="Main Campus Library" />
+                  <option value="ICT Lab 1" />
+                  <option value="ICT Lab 2" />
+                  <option value="Engineering Block" />
+                  <option value="PG Study Room" />
+                  <option value="Student Lounge" />
+                  <option value="Cafeteria Study Area" />
+                  <option value="Online (Virtual)" />
+                </datalist>
               </div>
               
               <button 
