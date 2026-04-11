@@ -39,7 +39,7 @@ export default function Profile() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.put('/api/users/profile', formData);
+      await api.put('/users/profile', formData);
       setEditing(false);
       window.location.reload(); // Refresh to get updated context
     } catch (err) {
@@ -56,7 +56,7 @@ export default function Profile() {
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary-container text-on-secondary-container text-xs font-bold tracking-widest uppercase">
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
-            Legendary AIT Scholar
+            {stats.totalHours >= 50 ? 'Legendary AIT Scholar' : stats.totalHours >= 20 ? 'Elite AIT Scholar' : 'AIT Scholar'}
           </div>
           
           <h2 className="text-5xl md:text-7xl font-headline font-extrabold text-primary tracking-tighter leading-none">
@@ -65,7 +65,7 @@ export default function Profile() {
           </h2>
           
           <p className="text-xl md:text-2xl text-on-surface-variant font-medium max-w-xl">
-            Pursuing Excellence at <span className="text-primary font-bold">AIT</span>. Dedicated to {user?.course || 'academic'} excellence and peer collaboration.
+            Pursuing Excellence at <span className="text-primary font-bold">AIT</span>. {user?.name ? user.name.split(' ')[0] : 'This scholar'} is focused on mastering {user?.course || 'their curriculum'} through dedicated study and peer collaboration.
           </p>
           
           <div className="flex flex-wrap gap-3 pt-4">
@@ -208,7 +208,7 @@ export default function Profile() {
             <div className="bg-secondary-container p-8 rounded-3xl flex flex-col justify-between shadow-lg">
               <span className="material-symbols-outlined text-3xl text-primary">workspace_premium</span>
               <div className="mt-8">
-                <h4 className="text-5xl font-headline font-bold text-primary tracking-tighter">0</h4>
+                <h4 className="text-5xl font-headline font-bold text-primary tracking-tighter">{Math.floor(stats.totalHours / 10)}</h4>
                 <p className="text-sm text-on-secondary-fixed-variant font-medium">Impact Badges</p>
               </div>
             </div>

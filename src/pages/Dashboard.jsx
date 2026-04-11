@@ -57,6 +57,19 @@ export default function Dashboard() {
   const progressPercentage = Math.min((stats.totalHours / studyGoal) * 100, 100);
   const strokeDashoffset = 552.92 - (552.92 * progressPercentage) / 100;
 
+  const getCourseGradient = (courseName) => {
+    const gradients = [
+      'from-blue-500 to-indigo-600',
+      'from-emerald-400 to-cyan-500',
+      'from-amber-400 to-orange-500',
+      'from-purple-500 to-pink-500',
+      'from-rose-400 to-red-500',
+      'from-slate-700 to-slate-900'
+    ];
+    const charCodeSum = (courseName || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return gradients[charCodeSum % gradients.length];
+  };
+
   return (
     <div className="space-y-12">
       {/* Hero Section */}
@@ -232,17 +245,17 @@ export default function Dashboard() {
             ))
           ) : recentSessions.length > 0 ? (
             recentSessions.map((session) => (
-              <div key={session.id} className="group relative bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500">
-                <div className="h-32 bg-slate-200 relative">
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent"></div>
-                  <span className="absolute bottom-3 left-4 bg-secondary-container text-on-secondary-fixed text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider">{session.location}</span>
+              <div key={session.id} className="group relative bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 border border-slate-100">
+                <div className={`h-32 bg-gradient-to-br ${getCourseGradient(session.course)} relative`}>
+                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <span className="absolute bottom-3 left-4 bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/30">{session.location}</span>
                 </div>
                 <div className="p-5">
-                  <h5 className="text-lg font-bold text-primary mb-1">{session.course}</h5>
-                  <p className="text-slate-500 text-xs mb-4">Match Score: <span className="text-secondary font-bold">{session.match_score} pts</span></p>
+                  <h5 className="text-lg font-bold text-primary mb-1 line-clamp-1">{session.course}</h5>
+                  <p className="text-slate-500 text-[10px] mb-4 uppercase tracking-widest font-bold">Match Score: <span className="text-secondary">{session.match_score} pts</span></p>
                   <div className="flex items-center justify-between mt-auto">
-                    <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">schedule</span> {new Date(session.time).toLocaleDateString()}
+                    <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase">
+                      <span className="material-symbols-outlined text-xs">schedule</span> {new Date(session.time).toLocaleDateString()}
                     </span>
                     <Link to={`/room/${session.id}`} className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-primary group-hover:bg-secondary group-hover:text-white transition-colors">
                       <span className="material-symbols-outlined text-sm">arrow_forward</span>

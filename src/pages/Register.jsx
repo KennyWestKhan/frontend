@@ -8,8 +8,8 @@ export default function Register() {
     email: '',
     password: '',
     course: '',
-    skill_level: 'beginner',
-    preferred_location: ''
+    skill_level: 'Beginner',
+    location: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -142,9 +142,9 @@ export default function Register() {
                     onChange={handleChange}
                     className="w-full h-12 px-4 rounded-lg bg-surface-container-low border-none focus:ring-2 focus:ring-primary/20 text-sm text-on-surface cursor-pointer"
                   >
-                    <option value="beginner">Beginner</option>
-                    <option value="intermediate">Intermediate</option>
-                    <option value="advanced">Advanced</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
                   </select>
                 </div>
               </div>
@@ -153,8 +153,8 @@ export default function Register() {
                 <label className="block font-label text-xs uppercase tracking-wider text-on-surface-variant font-bold mb-2 ml-1">Preferred Campus / Location</label>
                 <input 
                   type="text" 
-                  name="preferred_location"
-                  value={formData.preferred_location}
+                  name="location"
+                  value={formData.location}
                   onChange={handleChange}
                   list="location-list"
                   className="w-full h-12 px-5 rounded-lg bg-surface-container-low border-none focus:ring-2 focus:ring-primary/20 text-sm placeholder:text-outline" 
