@@ -7,8 +7,9 @@ export default function Profile() {
   const [stats, setStats] = useState({ totalHours: 0, sessionsJoined: 0 });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
-  const [formData, setFormData] = useState({ name: '', course: '', skill_level: '', location: '' });
+  const [formData, setFormData] = useState({ name: '', course: '', skill_level: '', location: '', expertise: [] });
   const [saving, setSaving] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -16,7 +17,8 @@ export default function Profile() {
         name: user.name || '',
         course: user.course || '',
         skill_level: user.skill_level || 'Intermediate',
-        location: user.location || ''
+        location: user.location || '',
+        expertise: Array.isArray(user.expertise) ? user.expertise : []
       });
       fetchProfileStats();
     }
@@ -33,6 +35,27 @@ export default function Profile() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddExpertise = (e) => {
+    e.preventDefault();
+    if (!newSkill.trim()) return;
+    if (formData.expertise.includes(newSkill.trim())) {
+      setNewSkill('');
+      return;
+    }
+    setFormData({
+      ...formData,
+      expertise: [...formData.expertise, newSkill.trim()]
+    });
+    setNewSkill('');
+  };
+
+  const handleRemoveExpertise = (skill) => {
+    setFormData({
+      ...formData,
+      expertise: formData.expertise.filter(s => s !== skill)
+    });
   };
 
   const handleUpdate = async (e) => {
@@ -70,7 +93,12 @@ export default function Profile() {
           
           <div className="flex flex-wrap gap-3 pt-4">
             <span className="px-5 py-2 rounded-full bg-surface-container-highest text-primary font-semibold text-sm">{user?.course || 'No course set'}</span>
-            <span className="px-5 py-2 rounded-full border border-outline-variant/30 text-outline font-medium text-sm hover:bg-surface-container-highest cursor-pointer transition-colors">+ Add Expertise</span>
+            {user?.expertise && Array.isArray(user.expertise) && user.expertise.map((skill, idx) => (
+              <span key={idx} className="px-5 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700 font-bold text-sm">
+                {skill}
+              </span>
+            ))}
+            <span onClick={() => setEditing(true)} className="px-5 py-2 rounded-full border border-outline-variant/30 text-outline font-medium text-sm hover:bg-surface-container-highest cursor-pointer transition-colors">+ Add Expertise</span>
           </div>
         </div>
 
@@ -177,6 +205,37 @@ export default function Profile() {
                   <option value="Cafeteria Study Area" />
                   <option value="Online (Virtual)" />
                 </datalist>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Expertise & Skills</label>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {formData.expertise.map((skill, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary text-xs font-bold rounded-lg border border-primary/20">
+                      {skill}
+                      <button type="button" onClick={() => handleRemoveExpertise(skill)}>
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Add a skill (e.g. React, Python)" 
+                    value={newSkill}
+                    onChange={e => setNewSkill(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleAddExpertise(e)}
+                    className="flex-grow h-12 px-4 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-secondary transition-all text-sm font-medium" 
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleAddExpertise}
+                    className="w-12 h-12 rounded-xl bg-secondary text-white flex items-center justify-center hover:bg-secondary/80 transition-all font-bold"
+                  >
+                    <span className="material-symbols-outlined">add</span>
+                  </button>
+                </div>
               </div>
               
               <button 
